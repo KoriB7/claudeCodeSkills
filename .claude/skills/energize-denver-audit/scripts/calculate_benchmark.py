@@ -136,6 +136,32 @@ def format_output_table(size_row, type_row, avg_row, sqft, building_name=None, b
     table_str = df.to_string(index=False)
     output.append(table_str)
 
+    # Add percentage row
+    output.append("")
+    output.append("Percentage of Total Energy:")
+    output.append("")
+
+    # Calculate percentages for average row
+    pct_row = {'Source': 'Percentage (%)'}
+    total_value = avg_row['Total']
+
+    if total_value != "Q" and total_value > 0:
+        for col in avg_row.index:
+            if col == 'Category':
+                continue
+            if col == 'Total':
+                pct_row[col] = '100%'
+            else:
+                try:
+                    val = float(avg_row[col])
+                    pct = (val / total_value) * 100
+                    pct_row[col] = f"{pct:.0f}%"
+                except (ValueError, TypeError):
+                    pct_row[col] = "N/A"
+
+        pct_df = pd.DataFrame([pct_row])
+        output.append(pct_df.to_string(index=False))
+
     # Calculate total annual energy
     output.append("")
     if avg_row['Total'] != "Q":
