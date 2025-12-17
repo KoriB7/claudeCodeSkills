@@ -1,0 +1,2 @@
+Building_Name,Address,Square_Footage,Building_Type,Total_kBtu_sqft,Space_Heating_kBtu_sqft,Cooling_kBtu_sqft,Ventilation_kBtu_sqft,Water_Heating_kBtu_sqft,Lighting_kBtu_sqft,Cooking_kBtu_sqft,Refrigeration_kBtu_sqft,Office_Equipment_kBtu_sqft,Computing_kBtu_sqft,Other_kBtu_sqft,Total_Annual_kBtu
+Example Building,123 Main St,15000,Office,62.55,21.85,5.65,8.95,1.90,6.95,6.35,2.90,0.70,4.15,10.90,938250
