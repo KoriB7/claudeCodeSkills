@@ -106,6 +106,30 @@ def calculate_averages(size_row, type_row):
     return pd.Series(avg_row)
 
 
+def calculate_percentages(row):
+    """Calculate percentage of each category from total."""
+    pct_row = {}
+    total_value = row['Total']
+
+    if total_value == "Q" or total_value <= 0:
+        return None
+
+    for col in row.index:
+        if col == 'Category':
+            continue
+        if col == 'Total':
+            pct_row[col] = '100%'
+        else:
+            try:
+                val = float(row[col])
+                pct = (val / total_value) * 100
+                pct_row[col] = f"{pct:.0f}%"
+            except (ValueError, TypeError):
+                pct_row[col] = "N/A"
+
+    return pct_row
+
+
 def format_output_table(size_row, type_row, avg_row, sqft, building_name=None, building_address=None):
     """Format the output as a readable table."""
     output = []
@@ -121,46 +145,43 @@ def format_output_table(size_row, type_row, avg_row, sqft, building_name=None, b
     output.append("Energy Use Intensity (kBtu/sqft):")
     output.append("")
 
-    # Create DataFrame for nice table formatting
-    df = pd.DataFrame([size_row, type_row, avg_row])
-    df = df.drop(columns=['Category'])
+    # Size-based row and percentage
+    size_data = size_row.drop('Category')
+    size_df = pd.DataFrame([size_data])
+    size_df.insert(0, 'Source', [f"Size-based ({size_row['Category']})"])
+    output.append(size_df.to_string(index=False))
 
-    # Add row labels
-    df.insert(0, 'Source', [
-        f"Size-based ({size_row['Category']})",
-        f"Type-based ({type_row['Category']})",
-        "AVERAGE (AUDIT)"
-    ])
-
-    # Format as table
-    table_str = df.to_string(index=False)
-    output.append(table_str)
-
-    # Add percentage row
-    output.append("")
-    output.append("Percentage of Total Energy:")
+    size_pct = calculate_percentages(size_row)
+    if size_pct:
+        size_pct['Source'] = 'Percentage (%)'
+        pct_df = pd.DataFrame([size_pct])
+        output.append(pct_df.to_string(index=False, header=False))
     output.append("")
 
-    # Calculate percentages for average row
-    pct_row = {'Source': 'Percentage (%)'}
-    total_value = avg_row['Total']
+    # Type-based row and percentage
+    type_data = type_row.drop('Category')
+    type_df = pd.DataFrame([type_data])
+    type_df.insert(0, 'Source', [f"Type-based ({type_row['Category']})"])
+    output.append(type_df.to_string(index=False, header=False))
 
-    if total_value != "Q" and total_value > 0:
-        for col in avg_row.index:
-            if col == 'Category':
-                continue
-            if col == 'Total':
-                pct_row[col] = '100%'
-            else:
-                try:
-                    val = float(avg_row[col])
-                    pct = (val / total_value) * 100
-                    pct_row[col] = f"{pct:.0f}%"
-                except (ValueError, TypeError):
-                    pct_row[col] = "N/A"
+    type_pct = calculate_percentages(type_row)
+    if type_pct:
+        type_pct['Source'] = 'Percentage (%)'
+        pct_df = pd.DataFrame([type_pct])
+        output.append(pct_df.to_string(index=False, header=False))
+    output.append("")
 
-        pct_df = pd.DataFrame([pct_row])
-        output.append(pct_df.to_string(index=False))
+    # Average row and percentage
+    avg_data = avg_row.drop('Category')
+    avg_df = pd.DataFrame([avg_data])
+    avg_df.insert(0, 'Source', ['AVERAGE (AUDIT)'])
+    output.append(avg_df.to_string(index=False, header=False))
+
+    avg_pct = calculate_percentages(avg_row)
+    if avg_pct:
+        avg_pct['Source'] = 'Percentage (%)'
+        pct_df = pd.DataFrame([avg_pct])
+        output.append(pct_df.to_string(index=False, header=False))
 
     # Calculate total annual energy
     output.append("")

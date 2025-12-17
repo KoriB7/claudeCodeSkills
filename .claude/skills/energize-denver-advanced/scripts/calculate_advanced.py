@@ -118,6 +118,30 @@ def lookup_value(df, category_value, factor_name):
     return row.iloc[0]
 
 
+def calculate_percentages(row):
+    """Calculate percentage of each category from total."""
+    pct_row = {}
+    total_value = row['Total']
+
+    if total_value == "Q" or total_value <= 0:
+        return None
+
+    for col in row.index:
+        if col == 'Category':
+            continue
+        if col == 'Total':
+            pct_row[col] = '100%'
+        else:
+            try:
+                val = float(row[col])
+                pct = (val / total_value) * 100
+                pct_row[col] = f"{pct:.0f}%"
+            except (ValueError, TypeError):
+                pct_row[col] = "N/A"
+
+    return pct_row
+
+
 def calculate_averages(factor_rows):
     """Calculate averages across all provided factors."""
     if not factor_rows:
@@ -172,49 +196,39 @@ def format_output_table(factor_rows, factor_names, avg_row, basic_avg, sqft, bui
     output.append("Energy Use Intensity (kBtu/sqft):")
     output.append("")
 
-    # Create DataFrame for table
-    table_data = []
-    row_labels = []
-
+    # Add each factor row with its percentage
     for i, row in enumerate(factor_rows):
-        table_data.append(row)
-        row_labels.append(f"{factor_names[i]} ({row['Category']})")
+        row_data = row.drop('Category')
+        row_df = pd.DataFrame([row_data])
+        row_df.insert(0, 'Source', [f"{factor_names[i]} ({row['Category']})"])
 
-    df = pd.DataFrame(table_data)
-    df = df.drop(columns=['Category'])
-    df.insert(0, 'Source', row_labels)
+        if i == 0:
+            output.append(row_df.to_string(index=False))
+        else:
+            output.append(row_df.to_string(index=False, header=False))
 
-    # Add separator
-    output.append(df.to_string(index=False))
+        # Add percentage row
+        row_pct = calculate_percentages(row)
+        if row_pct:
+            row_pct['Source'] = 'Percentage (%)'
+            pct_df = pd.DataFrame([row_pct])
+            output.append(pct_df.to_string(index=False, header=False))
+        output.append("")
+
+    # Add separator before average
     output.append("-" * 80)
 
-    # Add average
-    avg_df = pd.DataFrame([avg_row])
-    avg_df = avg_df.drop(columns=['Category'])
+    # Add average row
+    avg_data = avg_row.drop('Category')
+    avg_df = pd.DataFrame([avg_data])
     avg_df.insert(0, 'Source', ['AVERAGE (AUDIT)'])
     output.append(avg_df.to_string(index=False, header=False))
 
-    # Add percentage row
-    output.append("")
-    output.append("Percentage of Total Energy:")
-    pct_row = {'Source': 'Percentage (%)'}
-    total_value = avg_row['Total']
-
-    if total_value != "Q" and total_value > 0:
-        for col in avg_row.index:
-            if col == 'Category':
-                continue
-            if col == 'Total':
-                pct_row[col] = '100%'
-            else:
-                try:
-                    val = float(avg_row[col])
-                    pct = (val / total_value) * 100
-                    pct_row[col] = f"{pct:.0f}%"
-                except (ValueError, TypeError):
-                    pct_row[col] = "N/A"
-
-        pct_df = pd.DataFrame([pct_row])
+    # Add average percentage row
+    avg_pct = calculate_percentages(avg_row)
+    if avg_pct:
+        avg_pct['Source'] = 'Percentage (%)'
+        pct_df = pd.DataFrame([avg_pct])
         output.append(pct_df.to_string(index=False, header=False))
 
     # Add comparison if basic method provided
