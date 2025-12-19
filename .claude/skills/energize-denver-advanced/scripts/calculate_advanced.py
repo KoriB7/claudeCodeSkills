@@ -2,19 +2,24 @@
 """
 Energize Denver Advanced Benchmark Calculator
 
-Multi-factor energy benchmarking using CBECS 2018 data.
-Supports optional refinement by year built, region/climate, floors, and operating hours.
+Two-factor energy benchmarking using CBECS 2018 data.
+Always uses building size + ONE other factor (type, year, region, floors, or hours).
 
 Usage:
-    # Basic (size + type)
+    # Size + Type
     python calculate_advanced.py --sqft 25000 --type "Office"
 
-    # With year
-    python calculate_advanced.py --sqft 25000 --type "Office" --year "1980 to 1989"
+    # Size + Year
+    python calculate_advanced.py --sqft 25000 --year "1980 to 1989"
 
-    # Full refinement
-    python calculate_advanced.py --sqft 25000 --type "Office" --year "1980 to 1989" \
-                                  --region "Mountain" --floors 3 --hours "50 to 99"
+    # Size + Region
+    python calculate_advanced.py --sqft 25000 --region "Mountain"
+
+    # Size + Floors
+    python calculate_advanced.py --sqft 25000 --floors 3
+
+    # Size + Hours
+    python calculate_advanced.py --sqft 25000 --hours "50 to 99"
 """
 
 import argparse
@@ -271,27 +276,33 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Basic (size + type)
+  # Size + Type
   %(prog)s --sqft 25000 --type "Office"
 
-  # With year built
-  %(prog)s --sqft 25000 --type "Office" --year "1980 to 1989"
+  # Size + Year
+  %(prog)s --sqft 25000 --year "1980 to 1989"
 
-  # Full refinement
-  %(prog)s --sqft 25000 --type "Office" --year "1980 to 1989" \\
-           --region "Mountain" --floors 3 --hours 50
+  # Size + Region
+  %(prog)s --sqft 25000 --region "Mountain"
+
+  # Size + Floors
+  %(prog)s --sqft 25000 --floors 3
+
+  # Size + Hours
+  %(prog)s --sqft 25000 --hours 50
         """
     )
 
     # Required arguments
     parser.add_argument('--sqft', type=int, required=True, help='Building square footage')
-    parser.add_argument('--type', required=True, help='Building type (e.g., Office, Retail, Warehouse)')
 
-    # Optional refinement arguments
-    parser.add_argument('--year', help='Year built range (e.g., "1980 to 1989", "Before 1920")')
-    parser.add_argument('--region', help='Region or climate (e.g., "Mountain", "West", "Cool")')
-    parser.add_argument('--floors', type=int, help='Number of floors (1, 2, 3, 4-9, 10+)')
-    parser.add_argument('--hours', help='Weekly operating hours (number or range like "50 to 99")')
+    # Second factor - must provide exactly ONE of these
+    factor_group = parser.add_mutually_exclusive_group(required=True)
+    factor_group.add_argument('--type', help='Building type (e.g., Office, Retail, Warehouse)')
+    factor_group.add_argument('--year', help='Year built range (e.g., "1980 to 1989", "Before 1920")')
+    factor_group.add_argument('--region', help='Region or climate (e.g., "Mountain", "West", "Cool")')
+    factor_group.add_argument('--floors', type=int, help='Number of floors (1, 2, 3, 4-9, 10+)')
+    factor_group.add_argument('--hours', help='Weekly operating hours (number or range like "50 to 99")')
 
     # Building details
     parser.add_argument('--name', help='Building name (optional)')
@@ -315,40 +326,33 @@ Examples:
     factor_rows.append(size_row)
     factor_names.append("Building Size")
 
-    # 2. Type (required)
-    type_row = lookup_value(data['type'], args.type, "Building Type")
-    if type_row is None:
-        sys.exit(1)
-    factor_rows.append(type_row)
-    factor_names.append("Building Type")
-
-    # Calculate basic average (size + type) for comparison
-    basic_avg = calculate_averages([size_row, type_row])
-
-    # 3. Year (optional)
-    if args.year:
+    # 2. Second factor (exactly ONE of: type, year, region, floors, hours)
+    if args.type:
+        type_row = lookup_value(data['type'], args.type, "Building Type")
+        if type_row is None:
+            sys.exit(1)
+        factor_rows.append(type_row)
+        factor_names.append("Building Type")
+    elif args.year:
         year_row = lookup_value(data['year'], args.year, "Year Built")
-        if year_row is not None:
-            factor_rows.append(year_row)
-            factor_names.append("Year Built")
-
-    # 4. Region (optional)
-    if args.region:
+        if year_row is None:
+            sys.exit(1)
+        factor_rows.append(year_row)
+        factor_names.append("Year Built")
+    elif args.region:
         region_row = lookup_value(data['region'], args.region, "Region/Climate")
-        if region_row is not None:
-            factor_rows.append(region_row)
-            factor_names.append("Region/Climate")
-
-    # 5. Floors (optional)
-    if args.floors:
+        if region_row is None:
+            sys.exit(1)
+        factor_rows.append(region_row)
+        factor_names.append("Region/Climate")
+    elif args.floors:
         floors_range = find_floors_range(args.floors)
         floors_row = lookup_value(data['floors'], floors_range, "Floor Count")
-        if floors_row is not None:
-            factor_rows.append(floors_row)
-            factor_names.append("Floor Count")
-
-    # 6. Hours (optional)
-    if args.hours:
+        if floors_row is None:
+            sys.exit(1)
+        factor_rows.append(floors_row)
+        factor_names.append("Floor Count")
+    elif args.hours:
         # Check if it's a number or range string
         try:
             hours_num = int(args.hours)
@@ -357,9 +361,13 @@ Examples:
             hours_range = args.hours
 
         hours_row = lookup_value(data['hours'], hours_range, "Operating Hours")
-        if hours_row is not None:
-            factor_rows.append(hours_row)
-            factor_names.append("Operating Hours")
+        if hours_row is None:
+            sys.exit(1)
+        factor_rows.append(hours_row)
+        factor_names.append("Operating Hours")
+
+    # No basic comparison needed anymore - we always use exactly 2 factors
+    basic_avg = None
 
     # Calculate averages
     print(f"Calculating average across {len(factor_rows)} factors...")
@@ -374,15 +382,7 @@ Examples:
     print("="*80)
 
     # Summary
-    print(f"\nUsed {len(factor_rows)} factors for refined estimate")
-    if len(factor_rows) > 2:
-        try:
-            basic_total = float(basic_avg['Total'])
-            advanced_total = float(avg_row['Total'])
-            diff_pct = ((advanced_total - basic_total) / basic_total) * 100
-            print(f"Refinement adjusted estimate by {diff_pct:+.1f}% vs basic method")
-        except (ValueError, TypeError):
-            pass
+    print(f"\nAveraged {len(factor_rows)} factors (Size + {factor_names[1]})")
 
 
 if __name__ == "__main__":
