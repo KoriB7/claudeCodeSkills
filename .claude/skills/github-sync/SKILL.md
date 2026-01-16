@@ -1,327 +1,91 @@
 ---
 name: github-sync
-description: Sync Claude Code skills to GitHub repository. Use when the user wants to save, commit, push, or backup skills to git/GitHub, or when they ask to sync their skills.
+version: 1.0.0
+description: Syncs Claude Code skills to a GitHub repository. Use when the user wants to save, commit, push, or backup skills to git/GitHub, or when they ask to sync their skills.
+category: integration
 allowed-tools: Bash, Read, Glob
 ---
 
 # GitHub Skills Sync
 
-## Overview
+Syncs your Claude Code skills directory to a GitHub repository for version control and backup.
 
-This skill helps sync your Claude Code skills directory to a GitHub repository, ensuring your custom skills are version controlled and backed up.
+## Quick Start
 
-## Instructions
+When user asks to sync skills:
+1. Check git status
+2. Review changes
+3. Stage skill files
+4. Create commit with message
+5. Push to GitHub
+6. Verify success
 
-When the user asks to sync skills to GitHub, follow this workflow:
+## How It Works
 
-### 1. Check Git Status
+1. **Check Git Status** - Verify repo state and branch
+2. **Review Changes** - Show new, modified, deleted skills
+3. **Stage Skills** - Add `.claude/skills/` to staging
+4. **Create Commit** - Use descriptive message
+5. **Push to Remote** - Send to GitHub
+6. **Verify Success** - Confirm and report
 
-First, verify the current git state:
+## Usage
+
+### Standard Sync Workflow
 
 ```bash
-# Check if we're in a git repo
+# 1. Check status
 git status
-
-# Check current branch
 git branch --show-current
-
-# Check remote configuration
 git remote -v
+
+# 2. Review changes
+git diff .claude/skills/
+
+# 3. Stage skills
+git add .claude/skills/
+
+# 4. Commit
+git commit -m "Update Claude Code skills"
+
+# 5. Push
+git push origin main
+
+# 6. Verify
+git log -1 --oneline
 ```
 
-### 2. If Not a Git Repo Yet
+### First Time Setup
 
-If `.git` doesn't exist, initialize:
+If not a git repo yet, ask user preference:
+1. Initialize new repo
+2. Connect to existing GitHub repo
+3. Cancel
 
-**Ask the user:**
-- "I notice this isn't a git repository yet. Would you like me to:"
-  - "1. Initialize a new repo here"
-  - "2. Connect to an existing GitHub repo"
-  - "3. Cancel"
-
-**If initializing new repo:**
+**Initialize new:**
 ```bash
 git init
 git add .claude/skills/
 git commit -m "Initial commit: Add Claude Code skills"
 ```
 
-Then ask for GitHub repo URL to add as remote.
-
-**If connecting to existing:**
+**Connect to existing:**
 ```bash
 git remote add origin <user-provided-url>
 git pull origin main --allow-unrelated-histories
 ```
 
-### 3. Review Changes
+### Selective Sync
 
-Show what will be committed:
-
+For specific skills only:
 ```bash
-# Show status
-git status
-
-# Show diff of changed files
-git diff .claude/skills/
-
-# List all skill files
-ls -R .claude/skills/
-```
-
-**Present to user:**
-- List new skills
-- List modified skills
-- List deleted skills (if any)
-- Ask for confirmation to proceed
-
-### 4. Stage Skills
-
-Stage all skills in the `.claude/skills/` directory:
-
-```bash
-git add .claude/skills/
-```
-
-### 5. Create Commit
-
-**Ask user for commit message, or suggest:**
-- "Update skills: [brief description of changes]"
-- "Add new skill: [skill-name]"
-- "Update [skill-name]: [what changed]"
-
-**Default format if user doesn't specify:**
-```
-Update Claude Code skills
-
-- Added: [list new skills]
-- Modified: [list changed skills]
-- Removed: [list deleted skills]
-
-🤖 Synced with Claude Code
-```
-
-```bash
-git commit -m "User's message or generated message"
-```
-
-### 6. Push to GitHub
-
-```bash
-# Push to remote (usually 'origin main' or 'origin master')
-git push origin main
-```
-
-**If push fails:**
-- Check if remote is configured: `git remote -v`
-- Check if upstream is set: `git branch -vv`
-- Try: `git push -u origin main` (sets upstream)
-- If rejected, may need: `git pull origin main --rebase` then push again
-
-### 7. Verify Success
-
-```bash
-# Confirm last commit
-git log -1 --oneline
-
-# Show remote status
-git status
-```
-
-**Report to user:**
-- ✅ "Successfully synced X skills to GitHub"
-- 📊 "Commit: [commit hash] - [commit message]"
-- 🔗 "Repository: [remote URL]"
-- 📁 "Synced skills: [list skill names]"
-
-## Common Scenarios
-
-### Scenario A: First Time Setup
-
-User has never used git before:
-
-1. Check if git is installed: `git --version`
-2. If not installed, provide instructions for their OS
-3. Check git config: `git config user.name` and `git config user.email`
-4. If not configured, guide them to set it up:
-   ```bash
-   git config --global user.name "Your Name"
-   git config --global user.email "your.email@example.com"
-   ```
-5. Initialize repo and guide through GitHub repo creation
-6. Add remote and push
-
-### Scenario B: Regular Sync
-
-User already has everything set up:
-
-1. Check status
-2. Show changes
-3. Stage, commit, push
-4. Confirm success
-
-### Scenario C: Merge Conflicts
-
-If pull/push fails due to conflicts:
-
-1. Explain what happened
-2. Show conflicting files
-3. Guide through resolution:
-   ```bash
-   # Pull with rebase
-   git pull origin main --rebase
-
-   # If conflicts, help resolve them
-   git status
-   # Show conflicted files
-
-   # After resolution
-   git add .
-   git rebase --continue
-   git push origin main
-   ```
-
-### Scenario D: Selective Sync
-
-User wants to sync only specific skills:
-
-```bash
-# Stage specific skill
 git add .claude/skills/skill-name/
-
-# Or multiple skills
 git add .claude/skills/skill1/ .claude/skills/skill2/
 ```
 
-## Error Handling
-
-### Common Errors:
-
-**"fatal: not a git repository"**
-- Offer to initialize git repo
-
-**"fatal: 'origin' does not appear to be a git repository"**
-- Remote not configured, ask for GitHub URL
-
-**"error: failed to push some refs"**
-- Remote has changes, need to pull first
-- Run: `git pull origin main --rebase`
-
-**"Author identity unknown"**
-- Git config not set
-- Guide through setting user.name and user.email
-
-**"Permission denied (publickey)"**
-- SSH key not configured
-- Suggest using HTTPS instead, or help set up SSH keys
-
-**"rejected: non-fast-forward"**
-- Remote has commits not in local
-- Need to pull and merge/rebase first
-
-## Best Practices
-
-1. **Always review changes** before committing
-2. **Write clear commit messages** describing what changed
-3. **Pull before pushing** if working across multiple machines
-4. **Use meaningful branch names** if working on experimental skills
-5. **Don't commit sensitive data** (API keys, credentials, etc.)
-
-## GitHub Repository Setup
-
-If user needs to create a GitHub repo:
-
-1. **Guide them to:**
-   - Go to github.com
-   - Click "New repository"
-   - Name it (e.g., "claude-code-skills")
-   - Choose public or private
-   - Don't initialize with README (we already have files)
-   - Copy the repository URL
-
-2. **Then add remote:**
-   ```bash
-   git remote add origin https://github.com/username/repo-name.git
-   git push -u origin main
-   ```
-
-## Advanced Options
-
-### Create .gitignore
-
-If needed, create `.gitignore` to exclude files:
-
-```
-# .gitignore for Claude Code skills
-*.log
-.DS_Store
-Thumbs.db
-temp/
-*.tmp
-```
-
-### Add README
-
-Suggest creating a README for the skills repo:
-
-```markdown
-# My Claude Code Skills
-
-Custom skills for Claude Code CLI.
-
-## Skills
-
-- **skill-name**: Description of what it does
-
-## Installation
-
-Copy to your Claude Code skills directory:
-- Personal: `~/.claude/skills/`
-- Project: `.claude/skills/`
-
-## Usage
-
-These skills are automatically detected by Claude Code.
-```
-
-### Branching Strategy
-
-If user wants to work on experimental skills:
-
-```bash
-# Create feature branch
-git checkout -b feature/new-skill-name
-
-# Work on skill...
-
-# Commit changes
-git add .claude/skills/new-skill-name/
-git commit -m "Add new skill: skill-name"
-
-# Push branch
-git push -u origin feature/new-skill-name
-
-# When ready, merge to main
-git checkout main
-git merge feature/new-skill-name
-git push origin main
-```
-
-## Safety Checks
-
-Before pushing, verify:
-
-- [ ] No sensitive data in skill files (API keys, passwords, etc.)
-- [ ] Skill files are in correct format (SKILL.md with frontmatter)
-- [ ] All referenced files are included
-- [ ] Commit message is clear and descriptive
-- [ ] Remote URL is correct
-- [ ] Branch is correct (main/master)
-
 ## Output Format
 
-After successful sync, provide:
-
+**Success:**
 ```
 ✅ Skills synced to GitHub successfully!
 
@@ -338,43 +102,110 @@ After successful sync, provide:
 🔗 View on GitHub: [link to commit]
 ```
 
+**Commit Message Format:**
+```
+Update Claude Code skills
+
+- Added: [list new skills]
+- Modified: [list changed skills]
+- Removed: [list deleted skills]
+
+🤖 Synced with Claude Code
+```
+
+## Options
+
+### Git Configuration (if needed)
+```bash
+git config --global user.name "Your Name"
+git config --global user.email "your.email@example.com"
+```
+
+### Branch Operations
+```bash
+# Create feature branch
+git checkout -b feature/new-skill-name
+
+# Merge to main when ready
+git checkout main
+git merge feature/new-skill-name
+git push origin main
+```
+
 ## Troubleshooting
 
-If anything goes wrong:
+**"fatal: not a git repository"**
+- Solution: Offer to initialize git repo
 
-1. Show the error message
-2. Explain what it means in simple terms
-3. Provide step-by-step solution
-4. Offer to run commands to fix it
-5. Verify fix worked
+**"fatal: 'origin' does not appear to be a git repository"**
+- Solution: Remote not configured, ask for GitHub URL
+
+**"error: failed to push some refs"**
+- Solution: Remote has changes, run `git pull origin main --rebase`
+
+**"Author identity unknown"**
+- Solution: Set git config user.name and user.email
+
+**"Permission denied (publickey)"**
+- Solution: Use HTTPS instead of SSH, or set up SSH keys
+
+**"rejected: non-fast-forward"**
+- Solution: Pull and merge/rebase first
+
+## Best Practices
+
+1. **Always review changes** before committing
+2. **Write clear commit messages** describing what changed
+3. **Pull before pushing** if working across multiple machines
+4. **Use meaningful branch names** for experimental skills
+5. **Don't commit sensitive data** (API keys, credentials)
+
+## Safety Checks
+
+Before pushing, verify:
+- [ ] No sensitive data in skill files
+- [ ] Skill files are in correct format (skill.md with frontmatter)
+- [ ] All referenced files are included
+- [ ] Commit message is clear
+- [ ] Remote URL is correct
+- [ ] Branch is correct (main/master)
+
+## Common Scenarios
+
+### Scenario A: First Time Setup
+1. Check if git installed: `git --version`
+2. Check git config
+3. Initialize repo
+4. Guide through GitHub repo creation
+5. Add remote and push
+
+### Scenario B: Regular Sync
+1. Check status
+2. Show changes
+3. Stage, commit, push
+4. Confirm success
+
+### Scenario C: Merge Conflicts
+1. Explain what happened
+2. Show conflicting files
+3. Guide through resolution
+4. Complete rebase and push
 
 ## Quick Commands Reference
 
 ```bash
-# Status
-git status
-
-# Add skills
-git add .claude/skills/
-
-# Commit
-git commit -m "Your message"
-
-# Push
-git push origin main
-
-# Pull
-git pull origin main
-
-# View history
-git log --oneline -5
-
-# View remote
-git remote -v
-
-# Undo last commit (keep changes)
-git reset --soft HEAD~1
-
-# Discard local changes
-git checkout -- .claude/skills/
+git status                    # Status
+git add .claude/skills/       # Add skills
+git commit -m "message"       # Commit
+git push origin main          # Push
+git pull origin main          # Pull
+git log --oneline -5          # View history
+git remote -v                 # View remote
+git reset --soft HEAD~1       # Undo last commit (keep changes)
+git checkout -- .claude/skills/  # Discard local changes
 ```
+
+## References
+
+- GitHub documentation: https://docs.github.com/
+- Git reference: https://git-scm.com/docs

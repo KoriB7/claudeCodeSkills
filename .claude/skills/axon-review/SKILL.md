@@ -1,14 +1,31 @@
 ---
 name: axon-review
+version: 1.0.0
 description: Reviews SkySpark Axon code for best practices, efficient Haystack querying, proper function design, performance optimization, and common pitfalls. Use when reviewing Axon scripts, functions, or queries in SkySpark/Project Haystack context.
+category: guide
 allowed-tools: Read, Grep, Glob
 ---
 
 # SkySpark Axon Code Review
 
-## Overview
+A comprehensive guide for reviewing Axon code written for SkySpark, the IoT/building automation platform by SkyFoundry. Axon is a functional programming language designed for working with Haystack data models and time-series data.
 
-This skill reviews Axon code written for SkySpark (the IoT/building automation platform by SkyFoundry). Axon is a functional programming language designed for working with Haystack data models and time-series data.
+## Quick Start
+
+When reviewing Axon code:
+1. Check function design (names, parameters, documentation)
+2. Evaluate query efficiency (avoid N+1 problems)
+3. Verify error handling and null checks
+4. Review performance implications
+5. Assess date/time and timezone handling
+
+## How It Works
+
+1. **Read the code** using the allowed tools
+2. **Apply the checklist** from each review category below
+3. **Identify issues** categorized by severity (HIGH/MEDIUM/LOW)
+4. **Provide recommendations** with code examples
+5. **Generate summary** using the output format
 
 ## Review Checklist
 
@@ -22,9 +39,8 @@ This skill reviews Axon code written for SkySpark (the IoT/building automation p
 - [ ] Proper use of default parameters
 - [ ] Doc strings explain purpose and usage
 
-**Function Syntax**:
+**✅ GOOD**: Clear function with doc and type hints
 ```axon
-// ✅ GOOD: Clear function with doc and type hints
 /*
  * Calculate average temperature for a given period
  * @param point Ref to temp sensor point
@@ -34,8 +50,10 @@ This skill reviews Axon code written for SkySpark (the IoT/building automation p
 (point: Ref, span: DateSpan) => do
   readAll(point).hisRead(span).hisRollup(avg, 1day).avg("v0")
 end
+```
 
-// ❌ BAD: No documentation, unclear purpose
+**❌ BAD**: No documentation, unclear purpose
+```axon
 (p, s) => readAll(p).hisRead(s).hisRollup(avg, 1day).avg("v0")
 ```
 
@@ -49,27 +67,18 @@ end
 - [ ] Cache query results when reused
 - [ ] Use `readAllStream()` for large datasets
 
-**Query Optimization**:
+**✅ GOOD**: Specific filter, single query
 ```axon
-// ❌ BAD: Too broad, multiple queries
-readAll(site).each(site => do
-  points: readAll(point and equipRef==site->id)
-  // ... processing
-end)
-
-// ✅ GOOD: Specific filter, single query
 points: readAll(point and siteRef==@siteId and equipRef)
 equipIds: points.unique("equipRef")
 equips: readById(equipIds)
+```
 
-// ❌ BAD: Nested readAll (N+1 query problem)
+**❌ BAD**: Nested readAll (N+1 query problem)
+```axon
 readAll(equip).map(e =>
   readAll(point and equipRef==e->id)
 )
-
-// ✅ GOOD: Single query with join
-points: readAll(point and equipRef)
-points.groupBy("equipRef")
 ```
 
 ### 3. Historical Data Operations
@@ -82,20 +91,20 @@ points.groupBy("equipRef")
 - [ ] Use streaming functions for large datasets
 - [ ] Handle missing data gracefully
 
-**History Read Patterns**:
+**✅ GOOD**: Explicit range and rollup
 ```axon
-// ✅ GOOD: Explicit range and rollup
 points.hisRead(lastWeek(), {tz: "New_York"})
       .hisRollup(avg, 1hr)
       .hisMap(v => v * 1.8 + 32) // Convert C to F
+```
 
-// ❌ BAD: No rollup on large dataset
+**❌ BAD**: No rollup on large dataset
+```axon
 points.hisRead(lastYear()) // Could return millions of records!
+```
 
-// ✅ GOOD: Use rollup for large ranges
-points.hisRead(lastYear()).hisRollup(avg, 1day)
-
-// ✅ GOOD: Handle missing data
+**✅ GOOD**: Handle missing data
+```axon
 temp: point.hisRead(today())
 if (temp.isEmpty) return null
 temp.avg("v0")
@@ -111,29 +120,28 @@ temp.avg("v0")
 - [ ] Chain operations efficiently
 - [ ] Avoid mutating variables in loops
 
-**Functional Programming**:
+**✅ GOOD**: Functional pipeline
 ```axon
-// ✅ GOOD: Functional pipeline
 readAll(point and temp)
   .map(p => {dis: p->dis, val: p->curVal})
   .filter(p => p->val > 72)
   .sortCol("val")
   .reverse
+```
 
-// ❌ BAD: Imperative style with mutation
+**❌ BAD**: Imperative style with mutation
+```axon
 result: []
 readAll(point and temp).each(p => do
   if (p->curVal > 72) result = result.add({dis: p->dis, val: p->curVal})
 end)
 result
+```
 
-// ✅ GOOD: Use fold for accumulation
+**✅ GOOD**: Use fold for accumulation
+```axon
 points.hisRead(today())
       .fold(0, (acc, row) => acc + row->v0)
-
-// ❌ BAD: Manual accumulation
-sum: 0
-points.hisRead(today()).each(row => sum = sum + row->v0)
 ```
 
 ### 5. Error Handling
@@ -146,9 +154,8 @@ points.hisRead(today()).each(row => sum = sum + row->v0)
 - [ ] Use `trap` for error recovery
 - [ ] Log errors appropriately
 
-**Error Handling Patterns**:
+**✅ GOOD**: Input validation
 ```axon
-// ✅ GOOD: Input validation
 (siteId: Ref, days: Number) => do
   if (not siteId.isRef) throw "Invalid siteId: must be a Ref"
   if (days <= 0) throw "Invalid days: must be positive"
@@ -158,17 +165,17 @@ points.hisRead(today()).each(row => sum = sum + row->v0)
 
   // ... rest of logic
 end
+```
 
-// ❌ BAD: No validation or error handling
+**❌ BAD**: No validation or error handling
+```axon
 (siteId, days) => do
   readById(siteId).hisRead(pastDays(days))
 end
+```
 
-// ✅ GOOD: Use trap for recovery
-temp: trap(point->curVal, null)
-if (temp == null) temp = point.hisRead(yesterday()).last->v0
-
-// ✅ GOOD: Graceful degradation
+**✅ GOOD**: Graceful degradation
+```axon
 try
   externalApiCall(data)
 catch (err)
@@ -187,28 +194,26 @@ end
 - [ ] Use `readAllStream()` for large queries
 - [ ] Profile slow functions with `elapsed()`
 
-**Performance Patterns**:
+**✅ GOOD**: Batch read and group
 ```axon
-// ❌ BAD: Multiple separate reads
-sites.each(site => do
-  equips: readAll(equip and siteRef==site->id)
-  points: readAll(point and siteRef==site->id)
-end)
-
-// ✅ GOOD: Batch read and group
 allEquips: readAll(equip and siteRef)
 allPoints: readAll(point and siteRef)
 sites.each(site => do
   equips: allEquips.findAll(e => e->siteRef == site->id)
   points: allPoints.findAll(p => p->siteRef == site->id)
 end)
+```
 
-// ✅ GOOD: Use streaming for large datasets
-readAllStream(point and siteRef==@bigSiteId)
-  .map(p => processPoint(p))
-  .collect
+**❌ BAD**: Multiple separate reads
+```axon
+sites.each(site => do
+  equips: readAll(equip and siteRef==site->id)
+  points: readAll(point and siteRef==site->id)
+end)
+```
 
-// ✅ GOOD: Cache expensive operations
+**✅ GOOD**: Cache expensive operations
+```axon
 cachedData: () => do
   cached: context.get("myCache")
   if (cached != null) return cached
@@ -217,9 +222,6 @@ cachedData: () => do
   context.set("myCache", result, 1hr)
   return result
 end
-
-// ✅ GOOD: Measure performance
-elapsed("myQuery", () => readAll(point and temp))
 ```
 
 ### 7. Date/Time Handling
@@ -232,25 +234,20 @@ elapsed("myQuery", () => readAll(point and temp))
 - [ ] Consider site timezone vs UTC
 - [ ] Test across month/year boundaries
 
-**Date/Time Patterns**:
+**✅ GOOD**: Explicit timezone
 ```axon
-// ✅ GOOD: Explicit timezone
 tz: readById(@siteId)->tz
 span: today(tz)
 data: point.hisRead(span, {tz: tz})
+```
 
-// ❌ BAD: No timezone (uses server timezone)
+**❌ BAD**: No timezone (uses server timezone)
+```axon
 data: point.hisRead(today())
+```
 
-// ✅ GOOD: Date span construction
-span: dateSpan(2024-01-01, 2024-01-31)
-data: point.hisRead(span)
-
-// ✅ GOOD: Handle timezone conversions
-utcTime: now()
-localTime: utcTime.toTimeZone(site->tz)
-
-// ✅ GOOD: Use built-in date functions
+**✅ GOOD**: Use built-in date functions
+```axon
 lastWeek()
 yesterday()
 pastMonth()
@@ -268,26 +265,15 @@ dateSpan(date.firstOfMonth, date.lastOfMonth)
 - [ ] Validate tag types before operations
 - [ ] Use marker tags appropriately
 
-**Tag Handling**:
+**✅ GOOD**: Safe tag access
 ```axon
-// ✅ GOOD: Safe tag access
 val: point.get("curVal", 0)
 if (point.has("unit")) unit: point->unit
+```
 
-// ❌ BAD: Unsafe tag access (throws if missing)
+**❌ BAD**: Unsafe tag access (throws if missing)
+```axon
 val: point->curVal  // Error if curVal doesn't exist
-
-// ✅ GOOD: Trap for optional tags
-temp: trap(point->temp, null)
-if (temp != null) processTemp(temp)
-
-// ✅ GOOD: Check marker tags
-if (point.has("writable"))
-  pointWrite(point, 16, newVal)
-
-// ✅ GOOD: Type checking
-if (point->curVal.isNumber)
-  scaled: point->curVal * 1.8 + 32
 ```
 
 ### 9. Writing Data
@@ -300,9 +286,8 @@ if (point->curVal.isNumber)
 - [ ] Log write operations
 - [ ] Verify write succeeded if critical
 
-**Write Operations**:
+**✅ GOOD**: Safe write with validation
 ```axon
-// ✅ GOOD: Safe write with validation
 (point: Ref, value: Number, level: Number: 16) => do
   pt: readById(point)
   if (not pt.has("writable"))
@@ -322,8 +307,10 @@ if (point->curVal.isNumber)
     throw err
   end
 end
+```
 
-// ❌ BAD: No validation or error handling
+**❌ BAD**: No validation or error handling
+```axon
 pointWrite(point, 16, value)
 ```
 
@@ -337,9 +324,8 @@ pointWrite(point, 16, value)
 - [ ] Sort and limit results appropriately
 - [ ] Return grids from functions when appropriate
 
-**Grid Manipulation**:
+**✅ GOOD**: Grid transformation pipeline
 ```axon
-// ✅ GOOD: Grid transformation pipeline
 readAll(point and temp and equipRef)
   .addCol("tempF", (row) => row->curVal * 1.8 + 32)
   .addCol("status", (row) =>
@@ -350,29 +336,20 @@ readAll(point and temp and equipRef)
   .keepCols(["dis", "tempF", "status", "equipRef"])
   .sortCol("tempF")
   .findAll(row => row->status == "high")
-
-// ✅ GOOD: Add grid metadata
-result: readAll(point).addMeta({
-  title: "Temperature Points",
-  generated: now(),
-  siteRef: @siteId
-})
 ```
 
-## Common Pitfalls to Check
+## Common Pitfalls
 
-### 1. **Memory Issues with Large Datasets**
+### 1. Memory Issues with Large Datasets
 ```axon
 // ❌ BAD: Reading huge history into memory
 allPoints.hisRead(lastYear()) // Could crash!
 
 // ✅ GOOD: Use rollup or streaming
 allPoints.hisRead(lastYear()).hisRollup(avg, 1day)
-// OR
-readAllStream(point).map(p => p.hisRead(lastYear()).hisRollup(avg, 1day))
 ```
 
-### 2. **N+1 Query Problem**
+### 2. N+1 Query Problem
 ```axon
 // ❌ BAD: Query in loop
 sites.map(site => do
@@ -388,7 +365,7 @@ sites.map(site => do
 end)
 ```
 
-### 3. **Timezone Issues**
+### 3. Timezone Issues
 ```axon
 // ❌ BAD: Mixed timezones
 site1Data: points1.hisRead(today("New_York"))
@@ -402,7 +379,7 @@ site2Data: points2.hisRead(today(tz), {tz: tz})
 combined: site1Data.union(site2Data)
 ```
 
-### 4. **Missing Null Checks**
+### 4. Missing Null Checks
 ```axon
 // ❌ BAD: Assumes data exists
 avg: point.hisRead(today()).avg("v0")
@@ -413,7 +390,7 @@ if (data.isEmpty) return null
 avg: data.avg("v0")
 ```
 
-### 5. **Inefficient String Operations**
+### 5. Inefficient String Operations
 ```axon
 // ❌ BAD: String concatenation in loop
 result: ""
@@ -423,7 +400,7 @@ items.each(item => result = result + item.toStr + ",")
 result: items.map(i => i.toStr).join(",")
 ```
 
-### 6. **Unhandled Units**
+### 6. Unhandled Units
 ```axon
 // ❌ BAD: Ignoring units
 temps: points.map(p => p->curVal)
@@ -570,7 +547,24 @@ Provide review feedback as:
 - History read operations (check for large date ranges)
 - Complexity indicators (nested loops, deep call chains)
 
-## Resources
+## Troubleshooting
+
+**Code won't execute:**
+- Check for syntax errors (missing commas, brackets)
+- Verify all referenced functions exist
+- Check tag names match exactly (case-sensitive)
+
+**Performance issues:**
+- Profile with `elapsed()` to identify slow sections
+- Look for N+1 query patterns
+- Check history read date ranges
+
+**Unexpected results:**
+- Verify timezone settings
+- Check for null values in data
+- Validate tag types before operations
+
+## References
 
 - SkySpark Documentation: https://skyfoundry.com/doc
 - Project Haystack: https://project-haystack.org/
