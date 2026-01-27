@@ -1,0 +1,45 @@
+{
+  "scenario_1_high_confidence": {
+    "skill_name": "work-command-center",
+    "target_file": "skill-orchestration-guide.md",
+    "proposed_updates": {
+      "high_confidence": [
+        {
+          "description": "Disambiguate 'validate' vs 'run' for energy models",
+          "old_approach": "running-openstudio-models for validation",
+          "new_approach": "energyplus-assistant for validation (QA/QC), running-openstudio-models for simulations",
+          "reasoning": "Running models is for simulations, validation is the assistant's job",
+          "keywords": ["validate", "energy model", "validation"],
+          "orchestration_learning": true
+        }
+      ]
+    }
+  },
+  "scenario_2_medium_confidence": {
+    "skill_name": "work-command-center",
+    "target_file": "SKILL.md",
+    "proposed_updates": {
+      "medium_confidence": [
+        {
+          "description": "Reflect integration in session-end protocol validated",
+          "pattern": "User approved: The way you structured the Reflect integration into WCC's session-end protocol is perfect",
+          "previous_approach": "Session End Protocol step 2.5 integrates Reflect skill to capture corrections, approvals, and suggestions at session end",
+          "practice": "Invoke Reflect at session end (step 2.5) after asking 'Any corrections or learnings to capture?' - this workflow effectively captures user feedback and permanently improves skills"
+        }
+      ]
+    }
+  },
+  "scenario_3_low_confidence": {
+    "skill_name": "reflect",
+    "target_file": "SKILL.md",
+    "proposed_updates": {
+      "low_confidence": [
+        {
+          "suggestion": "Add learning confidence threshold setting where users could control which confidence levels get auto-applied vs requiring approval",
+          "description": "Consider: User-configurable confidence thresholds for auto-application",
+          "context": "User suggested allowing configuration of which confidence levels (HIGH/MEDIUM/LOW) require user approval vs automatic application"
+        }
+      ]
+    }
+  }
+}

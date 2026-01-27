@@ -1,0 +1,32 @@
+# Skill Learning Template
+# Copy this template to create a new .reflect.yaml file for a skill
+
+skill_name: SKILL_NAME_HERE
+last_updated: TIMESTAMP_HERE
+
+critical_corrections: []
+  # - pattern: "User said: Use X instead of Y"
+  #   fix: "Always use X for this situation"
+  #   timestamp: "2026-01-12T10:30:00Z"
+  #   session_id: "20260112-0930"
+
+best_practices: []
+  # - pattern: "User approved: This approach works well"
+  #   practice: "Follow this workflow for best results"
+  #   timestamp: "2026-01-12T11:15:00Z"
+  #   session_id: "20260112-0930"
+
+considerations: []
+  # - suggestion: "Consider checking X before Y"
+  #   context: "User mentioned this catches common issues"
+  #   timestamp: "2026-01-12T11:30:00Z"
+  #   session_id: "20260112-0930"
+
+orchestration_learnings: []
+  # - task_description: "what user asked for"
+  #   skill_chosen: "wrong-skill"
+  #   outcome: "wrong_skill"
+  #   correct_skill: "right-skill"
+  #   reasoning: "Why the correction was needed"
+  #   timestamp: "2026-01-12T10:45:00Z"
+  #   session_id: "20260112-0930"

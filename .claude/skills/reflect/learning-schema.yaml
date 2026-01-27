@@ -1,0 +1,64 @@
+# Learning Schema for Reflect System
+# Defines the structure of .reflect.yaml files that store learnings per skill
+
+skill_name: string  # Name of the skill (matches directory name)
+last_updated: timestamp  # ISO 8601 timestamp of last update
+
+critical_corrections:  # HIGH confidence learnings
+  - pattern: string  # Original user correction
+    fix: string  # Corrected approach
+    timestamp: timestamp  # When learned
+    session_id: string  # Session where learned (optional)
+
+best_practices:  # MEDIUM confidence learnings
+  - pattern: string  # What user approved
+    practice: string  # Validated approach description
+    timestamp: timestamp  # When validated
+    session_id: string  # Session where validated (optional)
+
+considerations:  # LOW confidence learnings
+  - suggestion: string  # What user suggested
+    context: string  # Context of suggestion (optional)
+    timestamp: timestamp  # When suggested
+    session_id: string  # Session where suggested (optional)
+
+orchestration_learnings:  # Special: WCC delegation improvements
+  - task_description: string  # User's original request
+    skill_chosen: string  # Skill that was initially chosen
+    outcome: string  # "wrong_skill" | "correct_skill" | "partial"
+    correct_skill: string  # Skill that should have been chosen
+    reasoning: string  # Why the correction was needed
+    timestamp: timestamp  # When learned
+    session_id: string  # Session where learned (optional)
+
+# Example structure:
+#
+# skill_name: energyplus-assistant
+# last_updated: 2026-01-12T10:30:00Z
+#
+# critical_corrections:
+#   - pattern: "User corrected: Always validate with OpenStudio docs first"
+#     fix: "Check OpenStudio 3.9 docs BEFORE Unmet Hours forums"
+#     timestamp: 2026-01-12T10:30:00Z
+#     session_id: "20260112-0930"
+#
+# best_practices:
+#   - pattern: "User approved: QA/QC workflow finds 90% of issues"
+#     practice: "Run validation checklist: geometry -> HVAC -> schedules -> constructions"
+#     timestamp: 2026-01-12T11:15:00Z
+#     session_id: "20260112-0930"
+#
+# considerations:
+#   - suggestion: "Check weather file compatibility before validation"
+#     context: "User had EPW compatibility issues multiple times"
+#     timestamp: 2026-01-12T11:30:00Z
+#     session_id: "20260112-0930"
+#
+# orchestration_learnings:
+#   - task_description: "validate energy model"
+#     skill_chosen: running-openstudio-models
+#     outcome: wrong_skill
+#     correct_skill: energyplus-assistant
+#     reasoning: "Running models is for simulations, validation is assistant's job"
+#     timestamp: 2026-01-12T10:45:00Z
+#     session_id: "20260112-0930"
