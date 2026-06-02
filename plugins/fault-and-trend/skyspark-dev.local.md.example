@@ -1,0 +1,5 @@
+skyspark_uri: "http://your-skyspark-server.com"
+skyspark_user: "your_username"
+skyspark_password: "your_password"
+write_enabled: false
+ssl_verify: false

@@ -1,0 +1,19 @@
+{
+  "name": "fault-and-trend",
+  "version": "0.2.0",
+  "description": "Live fault triage and trend anomaly detection for SkySpark. Queries active sparks and point history directly — no manual CSV export needed. Requires skyspark-dev.",
+  "author": {
+    "name": "Korine Bucher",
+    "email": "kbucher@iconergy.com"
+  },
+  "keywords": [
+    "skyspark",
+    "faults",
+    "trends",
+    "anomaly",
+    "rcx",
+    "mbcx",
+    "commissioning"
+  ],
+  "dependencies": ["skyspark-dev"]
+}
